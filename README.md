@@ -156,19 +156,24 @@ npm run build       # static export into ./out
 npm run preview     # build, then serve ./out through wrangler locally
 ```
 
-### Step 5 — Create the Cloudflare Pages project
+### Step 5 — Get your Cloudflare credentials
 
-1. In the [Cloudflare dashboard](https://dash.cloudflare.com) go to
-   **Workers & Pages → Create → Pages → Create using direct upload**.
-2. Name it `physio-tracker` (this is the **project name** the workflow deploys to) and
-   create it. Ignore the upload prompt — GitHub Actions does the uploading from here on.
+You do **not** need to create the Pages project by hand — the workflow creates it on
+the first run. You only need two values.
 
-> Using a different project name? Add a repository **variable** called
-> `CLOUDFLARE_PROJECT_NAME` in step 6 and the workflow will use it instead.
+**Account ID** — Cloudflare dashboard → **Compute (Workers & Pages)**; the Account ID
+is in the right-hand sidebar. It is also the long hex string in your dashboard URL.
 
-**Do not** connect the Pages project to your GitHub repo through Cloudflare's own Git
-integration — that would run a second, competing build. The GitHub Actions workflow is
-the only thing that should deploy.
+**API token** — profile menu → **My Profile → API Tokens → Create Token**, scroll to
+the bottom and choose **Custom token**:
+
+- Permissions: `Account` → `Cloudflare Pages` → **Edit**
+- Account Resources: include your account
+
+Create it and copy it — Cloudflare shows it exactly once.
+
+> Do **not** connect the Pages project to GitHub through Cloudflare's own Git
+> integration. That runs a second, competing build on every push.
 
 ### Step 6 — Add the GitHub repository secrets
 

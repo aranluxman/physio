@@ -55,6 +55,21 @@ jobs:
           fi
           npm run build
 
+      # `pages deploy` fails if the project does not exist yet, and it cannot be
+      # created from the dashboard's Git flow without also wiring up a second,
+      # competing build. Creating it here means the only Cloudflare setup left
+      # is the API token and account ID.
+      - name: Create the Pages project if it does not exist
+        uses: cloudflare/wrangler-action@v3
+        continue-on-error: true
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: >-
+            pages project create
+            ${{ vars.CLOUDFLARE_PROJECT_NAME || 'physio-tracker' }}
+            --production-branch=main
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
