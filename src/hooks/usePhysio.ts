@@ -56,11 +56,11 @@ export function usePhysio() {
     try {
       const since = addDays(todayISO(), -HISTORY_DAYS);
       const [exercisesRes, logsRes, appointmentsRes, notesRes] = await Promise.all([
-        supabase.from('exercises').select('*').order('display_order', { ascending: true }),
-        supabase.from('logs').select('*').gte('completed_on', since),
-        supabase.from('appointments').select('*').order('scheduled_at', { ascending: true }),
+        supabase.from('physio_exercises').select('*').order('display_order', { ascending: true }),
+        supabase.from('physio_logs').select('*').gte('completed_on', since),
+        supabase.from('physio_appointments').select('*').order('scheduled_at', { ascending: true }),
         supabase
-          .from('therapist_notes')
+          .from('physio_therapist_notes')
           .select('*')
           .order('is_pinned', { ascending: false })
           .order('display_order', { ascending: true }),
@@ -126,7 +126,7 @@ export function usePhysio() {
 
       try {
         const { data: inserted, error: insertError } = await getSupabase()
-          .from('logs')
+          .from('physio_logs')
           .upsert(
             {
               user_id: user.id,
@@ -179,7 +179,7 @@ export function usePhysio() {
 
       try {
         const { error: deleteError } = await getSupabase()
-          .from('logs')
+          .from('physio_logs')
           .delete()
           .eq('exercise_id', exerciseId)
           .eq('completed_on', completedOn)
@@ -215,7 +215,7 @@ export function usePhysio() {
       }));
 
       const { error: updateError } = await getSupabase()
-        .from('logs')
+        .from('physio_logs')
         .update({ pain_level: painLevel, notes: note })
         .eq('id', target.id);
       if (updateError && mounted.current) {
@@ -229,7 +229,7 @@ export function usePhysio() {
   /** Load the prescribed regimen for a brand-new account. */
   const seedRegimen = useCallback(async () => {
     setError(null);
-    const { error: rpcError } = await getSupabase().rpc('seed_my_regimen');
+    const { error: rpcError } = await getSupabase().rpc('physio_seed_my_regimen');
     if (rpcError) {
       setError(errorMessage(rpcError));
       return;

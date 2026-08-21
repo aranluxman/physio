@@ -80,14 +80,29 @@ Next appointment: **Tuesday 8 September 2026, 5:30 PM** (stored as an absolute i
 3. Paste the entire contents of [`supabase/schema.sql`](supabase/schema.sql) and click
    **Run**.
 
-That one file creates everything: the `exercises`, `logs`, `appointments` and
-`therapist_notes` tables, the RLS policies, and the seed function that loads your
-regimen. It is idempotent — re-running it is safe.
+That one file creates everything: the `physio_exercises`, `physio_logs`,
+`physio_appointments` and `physio_therapist_notes` tables, the RLS policies, and the
+seed function that loads your regimen. It is idempotent — re-running it is safe.
 
-It also installs a trigger on `auth.users`, so **every new signup is seeded
-automatically**. If your project blocks triggers on `auth.users`, delete section 9 of
-the file; the app shows a **Load my regimen** button that calls the same seed function
-over RPC instead.
+Every object is prefixed `physio_` so the app can share a Supabase project with your
+other apps without colliding on generic names like `logs` or `appointments`.
+
+**On first sign-in the dashboard shows a "Load my regimen" button** — tap it once and
+the eight exercises, the appointment and the therapist notes appear. That calls
+`physio_seed_my_regimen()` over RPC.
+
+### Two things that will bite you if you skip them
+
+- **The SQL Editor runs the whole file as one transaction.** If any statement fails,
+  everything rolls back and you are left with *no* tables — which then shows up as
+  `Could not find the function public.physio_seed_my_regimen in the schema cache` when
+  you tap the button. Read the Editor's output before assuming it worked.
+- **Section 9 (auto-seed on signup) is commented out on purpose.** It needs a trigger
+  on `auth.users`, which the SQL Editor role does not own on current Supabase projects
+  — that alone would roll back the whole file. Worse, on a shared project the
+  conventional names (`on_auth_user_created` / `public.handle_new_user()`) are very
+  likely already taken by another app's profile hook, and `create or replace` would
+  silently replace it. Only uncomment it on a project dedicated to this app.
 
 ### Step 2 — Configure Auth
 
@@ -111,11 +126,15 @@ https://<your-project>.pages.dev/**
 | Variable | Where to find it |
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Project URL, e.g. `https://abcdefgh.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The **anon / public** key |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | The **publishable** key, starting `sb_publishable_` |
 
-The anon key is designed to be public — it ships in the browser bundle, and row level
-security is what actually protects the data. **Never** put the `service_role` key in
-this project; it bypasses RLS entirely.
+Older projects issue a JWT **anon** key instead of a publishable key. Both work — set
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` in that case; the app accepts either variable and
+prefers the publishable one.
+
+Either key is designed to be public — it ships in the browser bundle, and row level
+security is what actually protects the data. **Never** put the `service_role` or
+`secret` key in this project; those bypass RLS entirely.
 
 ### Step 4 — Run it locally
 
@@ -171,7 +190,7 @@ and add all four:
 | `CLOUDFLARE_API_TOKEN` | The token you just created |
 | `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID |
 | `NEXT_PUBLIC_SUPABASE_URL` | From step 3 |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | From step 3 |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | From step 3 |
 
 The two Supabase values must be **Actions secrets**, not just a local `.env.local`.
 They're inlined into the JavaScript bundle at build time, so the build machine needs
@@ -180,6 +199,16 @@ notice instead of the app.
 
 Optionally, under the **Variables** tab, add `CLOUDFLARE_PROJECT_NAME` if your Pages
 project isn't called `physio-tracker`.
+
+> **What build settings does Cloudflare need?** None. With direct upload, GitHub
+> Actions builds the site and uploads the finished `out/` folder, so there is no build
+> command, output directory or environment variable to set on Cloudflare's side. If a
+> screen is asking you for those, you are in the *Connect to Git* flow — back out and
+> choose Direct Upload instead. (If you deliberately want Cloudflare to build: preset
+> **None**, build command `npm run build`, output directory `out`, and add the Supabase
+> variables plus `NODE_VERSION=22` there — then delete `deploy.yml`, or every push will
+> deploy twice. Do not pick the "Next.js (Static HTML Export)" preset: its build command
+> uses `next export`, which was removed in Next 14.)
 
 ### Step 7 — Push to `main` and watch it deploy
 
@@ -232,7 +261,7 @@ src/
     supabase.ts          Lazily-created browser client
     types.ts             Shared types, mirroring the SQL schema
 supabase/
-  schema.sql             Everything: tables, RLS, seed function, trigger
+  schema.sql             Everything: physio_* tables, RLS, seed function
   tests/                 psql scripts that verify seeding and RLS isolation
 tests/
   schedule.test.js       Assertions covering every frequency rule
@@ -262,12 +291,12 @@ psql -f supabase/tests/01_seed_and_rls_test.sql
 ## Changing the regimen
 
 Exercises live in the database, not in the code, so the fastest edit is in the Supabase
-table editor — change `target_sets`, `sessions_per_day`, `interval_days`, or flip
+table editor (`physio_exercises`) — change `target_sets`, `sessions_per_day`, `interval_days`, or flip
 `is_active` to `false` to retire an exercise without losing its history. The dashboard
 picks up the change on the next load.
 
 To change what a *fresh* account gets seeded with, edit
-`public.seed_default_regimen()` in `supabase/schema.sql` and re-run the file.
+`public.physio_seed_default_regimen()` in `supabase/schema.sql` and re-run the file.
 
-To move the appointment, update the row in `appointments` (or add a new one — the app
+To move the appointment, update the row in `physio_appointments` (or add a new one — the app
 shows the next future appointment).

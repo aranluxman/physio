@@ -48,7 +48,7 @@ function ConfigNotice() {
         </p>
         <pre className="mt-3 overflow-x-auto rounded-xl bg-slate-900 p-3 text-xs text-slate-100">
           {`NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon public key>`}
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}
         </pre>
         <p className="mt-3 text-sm text-slate-600">
           Locally they go in <code className="rounded bg-slate-100 px-1">.env.local</code>. For
