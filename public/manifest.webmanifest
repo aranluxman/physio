@@ -1,0 +1,17 @@
+{
+  "name": "Physio Tracker",
+  "short_name": "Physio",
+  "description": "Daily hip rehab checklist, schedule and pain log.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#246865",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
