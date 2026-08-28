@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react';
 import type { LogEntry, PlanItem, PlanStatus } from '@/lib/types';
 import { dosageLabel } from '@/lib/schedule';
 import { SessionToggle } from './SessionToggle';
+import { CategoryIcon } from './CategoryIcon';
+import { ChevronDownIcon } from './icons';
 
-const STATUS_STYLES: Record<PlanStatus, string> = {
-  due: 'bg-amber-100 text-amber-800',
-  done: 'bg-emerald-100 text-emerald-800',
-  optional: 'bg-sky-100 text-sky-800',
-  resting: 'bg-slate-100 text-slate-600',
+const STATUS_CHIP: Record<PlanStatus, string> = {
+  due: 'chip-warn',
+  done: 'chip-ok',
+  optional: 'chip-info',
+  resting: 'chip-muted',
 };
 
 const STATUS_TEXT: Record<PlanStatus, string> = {
@@ -48,7 +50,6 @@ export function ExerciseCard({
   const [pain, setPain] = useState<number | null>(latest?.pain_level ?? null);
   const [note, setNote] = useState(latest?.notes ?? '');
 
-  // Re-sync the draft when a new session is logged (or undone) for this day.
   const latestId = latest?.id ?? null;
   useEffect(() => {
     setPain(latest?.pain_level ?? null);
@@ -61,62 +62,79 @@ export function ExerciseCard({
     setExpanded(false);
   };
 
+  const complete = status === 'done';
+
   return (
     <li
-      className={`card p-4 transition ${
-        status === 'done' ? 'border-emerald-200 bg-emerald-50/40' : ''
-      } ${item.urgent && status === 'due' ? 'border-amber-300' : ''}`}
+      className={`card-interactive overflow-hidden p-4 ${
+        complete ? 'border-ok/30 bg-ok-soft/25' : ''
+      } ${item.urgent && status === 'due' ? 'border-warn/40' : ''}`}
     >
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <h3 className="text-base font-semibold text-slate-900">{exercise.name}</h3>
-        <span className={`chip ${STATUS_STYLES[status]}`}>{STATUS_TEXT[status]}</span>
-        {item.urgent && status === 'due' && (
-          <span className="chip bg-red-100 text-red-700">Don&rsquo;t skip</span>
-        )}
+      <div className="flex items-start gap-3">
+        <CategoryIcon category={exercise.category} size="sm" className="mt-0.5" />
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <h3
+              className={`text-[15px] font-semibold leading-tight text-ink transition ${
+                complete ? 'opacity-70' : ''
+              }`}
+            >
+              {exercise.name}
+            </h3>
+            <span className={STATUS_CHIP[status]}>{STATUS_TEXT[status]}</span>
+            {item.urgent && status === 'due' && (
+              <span className="chip-danger">Don&rsquo;t skip</span>
+            )}
+          </div>
+
+          <p className="mt-1 text-sm font-medium text-muted">
+            {dosageLabel(exercise)}
+            <span className="text-faint"> · {item.scheduleLabel}</span>
+          </p>
+          <p className="mt-0.5 text-[13px] text-faint">{item.statusLabel}</p>
+        </div>
       </div>
-      <p className="mt-1 text-sm text-slate-600">
-        {dosageLabel(exercise)} · <span className="text-slate-500">{item.scheduleLabel}</span>
-      </p>
-      <p className="mt-0.5 text-sm text-slate-500">{item.statusLabel}</p>
 
       {item.weekly && (
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-3 flex items-center gap-2 pl-11">
           <div className="flex gap-1" aria-hidden="true">
             {Array.from({ length: item.weekly.max }, (_, i) => (
               <span
                 key={i}
-                className={`h-1.5 w-8 rounded-full ${
-                  i < item.weekly!.done
-                    ? 'bg-brand-500'
-                    : i < item.weekly!.min
-                      ? 'bg-slate-200'
-                      : 'bg-slate-200/60'
+                className={`h-1.5 w-8 rounded-full transition-colors duration-300 ${
+                  i < item.weekly!.done ? 'bg-accent' : 'bg-line'
                 }`}
               />
             ))}
           </div>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-faint">
             {item.weekly.done}/{item.weekly.min}
             {item.weekly.max > item.weekly.min ? `-${item.weekly.max}` : ''} this week
           </span>
         </div>
       )}
 
-      {/* Actions: details on the left, the day's tick boxes on the right. Keeping
-          them on their own row stops long exercise names from squeezing the
-          tap targets on a phone. */}
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+      {/* Actions: details on the left, the day's tick boxes on the right. */}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pl-11">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="text-sm font-medium text-brand-700 hover:text-brand-800"
+            className="focus-ring -ml-1.5 flex items-center gap-1 rounded-lg px-1.5 py-1
+              text-[13px] font-semibold text-accent transition hover:bg-accent-soft"
             aria-expanded={expanded}
+            aria-controls={`details-${exercise.id}`}
           >
             {expanded ? 'Hide details' : 'Details & pain log'}
+            <ChevronDownIcon
+              className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                expanded ? 'rotate-180' : ''
+              }`}
+            />
           </button>
           {latest?.pain_level != null && (
-            <span className="chip bg-slate-100 text-slate-600">Pain {latest.pain_level}/10</span>
+            <span className="chip-muted">Pain {latest.pain_level}/10</span>
           )}
         </div>
 
@@ -136,13 +154,16 @@ export function ExerciseCard({
       </div>
 
       {expanded && (
-        <div className="mt-3 space-y-4 border-t border-slate-200 pt-3">
+        <div
+          id={`details-${exercise.id}`}
+          className="animate-rise-in mt-3.5 space-y-4 border-t border-line pt-3.5"
+        >
           {exercise.description && (
-            <p className="text-sm leading-relaxed text-slate-600">{exercise.description}</p>
+            <p className="text-sm leading-relaxed text-muted">{exercise.description}</p>
           )}
 
-          <div>
-            <span className="text-sm font-medium text-slate-700">Pain level today</span>
+          <fieldset>
+            <legend className="text-sm font-medium text-ink">Pain level today</legend>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {Array.from({ length: 11 }, (_, level) => (
                 <button
@@ -150,22 +171,24 @@ export function ExerciseCard({
                   type="button"
                   onClick={() => setPain(pain === level ? null : level)}
                   aria-pressed={pain === level}
-                  className={`h-9 w-9 rounded-lg text-sm font-semibold transition ${
-                    pain === level
-                      ? 'bg-slate-900 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                  aria-label={`Pain level ${level} out of 10`}
+                  className={`focus-ring h-9 w-9 rounded-lg text-sm font-semibold transition
+                    active:scale-90 ${
+                      pain === level
+                        ? 'bg-ink text-canvas'
+                        : 'bg-panel text-muted hover:bg-line hover:text-ink'
+                    }`}
                 >
                   {level}
                 </button>
               ))}
             </div>
-            <p className="mt-1 text-xs text-slate-500">0 = no pain · 10 = worst</p>
-          </div>
+            <p className="mt-1.5 text-xs text-faint">0 = no pain · 10 = worst</p>
+          </fieldset>
 
           <div>
             <label
-              className="text-sm font-medium text-slate-700"
+              className="text-sm font-medium text-ink"
               htmlFor={`note-${exercise.id}`}
             >
               Notes
@@ -176,7 +199,7 @@ export function ExerciseCard({
               onChange={(e) => setNote(e.target.value)}
               rows={2}
               placeholder="How did it feel? Any pinching at the front of the hip?"
-              className="input mt-1 resize-y text-sm"
+              className="input mt-1.5 resize-y text-sm"
             />
           </div>
 
@@ -190,7 +213,7 @@ export function ExerciseCard({
               Save
             </button>
             {todaysLogs.length === 0 && (
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-faint">
                 Log a session first, then the note attaches to it.
               </span>
             )}

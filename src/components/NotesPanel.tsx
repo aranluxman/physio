@@ -7,27 +7,27 @@ export function NotesPanel({ notes }: { notes: TherapistNote[] }) {
 
   return (
     <section className="card p-5">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-faint">
         Therapist notes
       </h2>
-      <ul className="mt-3 space-y-3">
+      <ul className="mt-3.5 space-y-3.5">
         {notes.map((note) => (
           <li key={note.id} className="flex gap-3">
             <span
               className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                note.is_pinned ? 'bg-brand-500' : 'bg-slate-300'
+                note.is_pinned ? 'bg-accent' : 'bg-line'
               }`}
               aria-hidden="true"
             />
             <div>
               <p
                 className={`text-sm leading-relaxed ${
-                  note.is_pinned ? 'font-medium text-slate-900' : 'text-slate-600'
+                  note.is_pinned ? 'font-medium text-ink' : 'text-muted'
                 }`}
               >
                 {note.body}
               </p>
-              <span className="mt-0.5 inline-block text-xs uppercase tracking-wide text-slate-400">
+              <span className="mt-1 inline-block text-[11px] font-semibold uppercase tracking-wider text-faint">
                 {note.category}
               </span>
             </div>

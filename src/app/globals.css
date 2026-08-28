@@ -2,40 +2,205 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+   Design tokens.
+
+   Every colour in the app resolves to one of these variables, so light and
+   dark are one palette swap rather than a pile of `dark:` overrides. Values
+   are space-separated RGB channels so Tailwind can apply opacity to them
+   (`bg-surface/60`).
+
+   The pairings here are checked against WCAG AA by tests/contrast.test.js —
+   change a value and the test run tells you if it broke.
+--------------------------------------------------------------------------- */
 :root {
+  --canvas: 245 247 247;
+  --surface: 255 255 255;
+  --panel: 238 242 242;
+  --line: 221 229 228;
+  --ink: 13 27 26;
+  --muted: 91 107 106;
+  --faint: 124 138 137;
+
+  --accent: 20 107 100;
+  --accent-fg: 255 255 255;
+  --accent-soft: 224 240 238;
+  --accent-soft-fg: 15 87 81;
+
+  --ok: 15 122 82;
+  --ok-soft: 220 243 232;
+  --ok-soft-fg: 11 92 62;
+
+  --warn: 138 90 0;
+  --warn-soft: 252 239 214;
+  --warn-soft-fg: 122 79 0;
+
+  --danger: 165 34 34;
+  --danger-soft: 251 228 228;
+  --danger-soft-fg: 140 29 29;
+
+  --info: 13 95 138;
+  --info-soft: 220 237 247;
+  --info-soft-fg: 11 77 111;
+
+  /* Depth: light mode leans on shadow, dark mode on borders. */
+  --shadow-card: 0 1px 2px 0 rgb(13 27 26 / 0.05), 0 1px 3px 0 rgb(13 27 26 / 0.04);
+  --shadow-raised: 0 4px 12px -2px rgb(13 27 26 / 0.10), 0 2px 6px -2px rgb(13 27 26 / 0.06);
+  --shadow-pop: 0 10px 30px -8px rgb(13 27 26 / 0.20);
+
   color-scheme: light;
 }
 
-html,
-body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+.dark {
+  --canvas: 10 18 17;
+  --surface: 17 27 26;
+  --panel: 24 35 34;
+  --line: 38 49 47;
+  --ink: 231 239 238;
+  --muted: 154 172 170;
+  --faint: 127 146 144;
+
+  --accent: 78 201 189;
+  --accent-fg: 6 32 29;
+  --accent-soft: 18 51 47;
+  --accent-soft-fg: 127 220 210;
+
+  --ok: 78 201 141;
+  --ok-soft: 18 48 40;
+  --ok-soft-fg: 126 220 174;
+
+  --warn: 224 169 74;
+  --warn-soft: 51 40 15;
+  --warn-soft-fg: 240 201 135;
+
+  --danger: 239 138 138;
+  --danger-soft: 51 26 26;
+  --danger-soft-fg: 244 168 168;
+
+  --info: 99 184 224;
+  --info-soft: 18 43 56;
+  --info-soft-fg: 147 207 238;
+
+  /* Shadows read as mud on a dark ground, so they mostly step aside for
+     borders and a faint lift. */
+  --shadow-card: 0 0 0 0 transparent;
+  --shadow-raised: 0 4px 14px -4px rgb(0 0 0 / 0.55);
+  --shadow-pop: 0 12px 34px -10px rgb(0 0 0 / 0.7);
+
+  color-scheme: dark;
 }
 
-/* Respect the iOS safe area so the bottom nav is never under the home bar. */
+html {
+  background-color: rgb(var(--canvas));
+}
+
+body {
+  @apply bg-canvas text-ink antialiased;
+}
+
+/* Honour the OS setting for people who ask for less movement. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
+    @apply rounded-2xl border border-line bg-surface;
+    box-shadow: var(--shadow-card);
   }
+  .card-interactive {
+    @apply card transition duration-200;
+  }
+  .card-interactive:hover {
+    box-shadow: var(--shadow-raised);
+    @apply border-line/80 -translate-y-px;
+  }
+
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition
-           focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+    @apply inline-flex select-none items-center justify-center gap-2 rounded-xl px-4 py-2.5
+           text-sm font-semibold transition duration-150
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent
+           focus-visible:ring-offset-2 focus-visible:ring-offset-canvas
            disabled:cursor-not-allowed disabled:opacity-60;
   }
   .btn-primary {
-    @apply btn bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800;
+    @apply btn bg-accent text-accent-fg hover:brightness-110 active:brightness-95;
   }
   .btn-secondary {
-    @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+    @apply btn border border-line bg-surface text-ink hover:bg-panel active:bg-panel;
   }
+  .btn-ghost {
+    @apply btn text-muted hover:bg-panel hover:text-ink;
+  }
+
   .input {
-    @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base text-slate-900
-           placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200;
+    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink
+           placeholder:text-faint focus:border-accent focus:outline-none
+           focus:ring-2 focus:ring-accent/30;
   }
+
   .chip {
-    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium;
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium;
   }
+  .chip-accent { @apply chip bg-accent-soft text-accent-soft-fg; }
+  .chip-ok     { @apply chip bg-ok-soft text-ok-soft-fg; }
+  .chip-warn   { @apply chip bg-warn-soft text-warn-soft-fg; }
+  .chip-danger { @apply chip bg-danger-soft text-danger-soft-fg; }
+  .chip-info   { @apply chip bg-info-soft text-info-soft-fg; }
+  .chip-muted  { @apply chip bg-panel text-muted; }
+
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent
+           focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
+  }
+}
+
+/* --- Motion --------------------------------------------------------------- */
+@keyframes check-pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  60%  { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-check-pop { animation: check-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+@keyframes rise-in {
+  from { transform: translateY(6px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+.animate-rise-in { animation: rise-in 320ms ease-out both; }
+
+@keyframes confetti-fall {
+  0%   { transform: translateY(-12px) rotate(0deg); opacity: 0; }
+  15%  { opacity: 1; }
+  100% { transform: translateY(120px) rotate(320deg); opacity: 0; }
+}
+.animate-confetti { animation: confetti-fall 1.6s ease-in forwards; }
+
+@keyframes ring-sweep {
+  from { stroke-dashoffset: var(--ring-start); }
+  to   { stroke-dashoffset: var(--ring-end); }
+}
+
+/* --- Avatar ---------------------------------------------------------------
+   The hue is per-user (set inline as --avatar-h); the lightness pair is per
+   theme, so a light avatar never becomes a glare disc on the dark ground.
+--------------------------------------------------------------------------- */
+.avatar-swatch {
+  background-color: hsl(var(--avatar-h) 45% 90%);
+  color: hsl(var(--avatar-h) 60% 25%);
+}
+.dark .avatar-swatch {
+  background-color: hsl(var(--avatar-h) 26% 24%);
+  color: hsl(var(--avatar-h) 62% 76%);
 }

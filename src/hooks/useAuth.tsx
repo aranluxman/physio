@@ -20,6 +20,10 @@ interface AuthContextValue {
   signUp: (email: string, password: string) => Promise<{ needsConfirmation: boolean }>;
   signInWithMagicLink: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Save profile fields onto the Supabase user's metadata. */
+  updateProfile: (patch: Record<string, unknown>) => Promise<void>;
+  /** Change the account password. Supabase requires an active session. */
+  updatePassword: (password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -75,6 +79,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }, []);
 
+  const updateProfile = useCallback(async (patch: Record<string, unknown>) => {
+    const { data, error } = await getSupabase().auth.updateUser({ data: patch });
+    if (error) throw error;
+    // updateUser does not always emit an auth event, so fold the fresh user in
+    // by hand or the UI keeps showing the old name.
+    if (data.user) {
+      setSession((prev) => (prev ? { ...prev, user: data.user } : prev));
+    }
+  }, []);
+
+  const updatePassword = useCallback(async (password: string) => {
+    const { error } = await getSupabase().auth.updateUser({ password });
+    if (error) throw error;
+  }, []);
+
   const signOut = useCallback(async () => {
     const { error } = await getSupabase().auth.signOut();
     if (error) throw error;
@@ -90,8 +109,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signUp,
       signInWithMagicLink,
       signOut,
+      updateProfile,
+      updatePassword,
     }),
-    [session, loading, signInWithPassword, signUp, signInWithMagicLink, signOut],
+    [
+      session,
+      loading,
+      signInWithPassword,
+      signUp,
+      signInWithMagicLink,
+      signOut,
+      updateProfile,
+      updatePassword,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

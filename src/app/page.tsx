@@ -7,6 +7,7 @@ import { ExerciseCard } from '@/components/ExerciseCard';
 import { AppointmentCard } from '@/components/AppointmentCard';
 import { NotesPanel } from '@/components/NotesPanel';
 import { EmptyRegimen } from '@/components/EmptyRegimen';
+import { DayComplete } from '@/components/DayComplete';
 import { formatLongDate } from '@/lib/date';
 import type { PlanItem } from '@/lib/types';
 
@@ -44,19 +45,23 @@ export default function DashboardPage() {
   };
 
   const dueNow = plan.items.filter((i) => i.status === 'due');
-  const laterToday = plan.items.filter((i) => i.status !== 'due');
+  const rest = plan.items.filter((i) => i.status !== 'due');
+  const allDone = plan.totalRequired > 0 && plan.totalCompleted >= plan.totalRequired;
 
   if (loading) return <SkeletonList />;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Today</h1>
-        <p className="text-sm text-slate-500">{formatLongDate(today)}</p>
+        <h1 className="text-2xl font-bold tracking-tight text-ink">Today</h1>
+        <p className="mt-0.5 text-sm text-muted">{formatLongDate(today)}</p>
       </div>
 
       {error && (
-        <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+        <p
+          className="rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger-soft-fg"
+          role="alert"
+        >
           {error}
         </p>
       )}
@@ -65,20 +70,20 @@ export default function DashboardPage() {
         <EmptyRegimen onSeed={seedRegimen} />
       ) : (
         <>
-          <section className="card p-5">
-            <ProgressBar
-              percent={plan.percent}
-              completed={plan.totalCompleted}
-              required={plan.totalRequired}
-            />
-          </section>
+          {allDone ? (
+            <DayComplete sessions={plan.totalRequired} />
+          ) : (
+            <section className="card p-5">
+              <ProgressBar
+                percent={plan.percent}
+                completed={plan.totalCompleted}
+                required={plan.totalRequired}
+              />
+            </section>
+          )}
 
-          <Section title="Due today" count={dueNow.length}>
-            {dueNow.length === 0 ? (
-              <p className="card p-5 text-sm text-slate-600">
-                Everything scheduled for today is logged. 🎉
-              </p>
-            ) : (
+          {dueNow.length > 0 && (
+            <Section title="Due today" count={dueNow.length}>
               <CardList
                 items={dueNow}
                 today={today}
@@ -87,13 +92,16 @@ export default function DashboardPage() {
                 onToggle={toggle}
                 onAnnotate={annotateToday}
               />
-            )}
-          </Section>
+            </Section>
+          )}
 
-          {laterToday.length > 0 && (
-            <Section title="Completed & not scheduled" count={laterToday.length}>
+          {rest.length > 0 && (
+            <Section
+              title={dueNow.length === 0 ? 'Your exercises' : 'Completed & not scheduled'}
+              count={rest.length}
+            >
               <CardList
-                items={laterToday}
+                items={rest}
                 today={today}
                 busyKeys={busyKeys}
                 logsFor={todaysLogsByExercise}
@@ -122,9 +130,9 @@ function Section({
 }) {
   return (
     <section>
-      <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+      <h2 className="mb-2.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-faint">
         {title}
-        <span className="chip bg-slate-200 text-slate-600">{count}</span>
+        <span className="chip-muted !px-2 !py-0.5 tabular-nums">{count}</span>
       </h2>
       {children}
     </section>
@@ -165,10 +173,11 @@ function CardList({
 
 function SkeletonList() {
   return (
-    <div className="space-y-3">
-      <div className="h-8 w-32 animate-pulse rounded-lg bg-slate-200" />
-      {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="h-24 animate-pulse rounded-2xl bg-slate-200" />
+    <div className="space-y-4">
+      <div className="h-8 w-32 animate-pulse rounded-lg bg-panel" />
+      <div className="h-32 animate-pulse rounded-2xl bg-panel" />
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="h-28 animate-pulse rounded-2xl bg-panel" />
       ))}
     </div>
   );

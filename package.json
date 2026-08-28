@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "preview": "npm run build && npx wrangler pages dev out",
     "deploy": "npm run build && npx wrangler pages deploy out",
-    "test": "tsc src/lib/schedule.ts src/lib/date.ts src/lib/types.ts --outDir .test-build --module commonjs --target es2020 --moduleResolution node --strict && node tests/schedule.test.js"
+    "test": "tsc src/lib/schedule.ts src/lib/date.ts src/lib/types.ts src/lib/stats.ts --outDir .test-build --module commonjs --target es2020 --moduleResolution node --strict && node tests/schedule.test.js && node tests/stats.test.js && node tests/contrast.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

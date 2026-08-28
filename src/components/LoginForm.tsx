@@ -44,17 +44,17 @@ export function LoginForm() {
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-10">
       <div className="mb-6 text-center">
-        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-brand-600 text-lg font-bold text-white">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-lg font-bold text-accent-fg">
           PT
         </span>
-        <h1 className="mt-4 text-2xl font-bold text-slate-900">Physio Tracker</h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">Physio Tracker</h1>
+        <p className="mt-1 text-sm text-muted">
           Your hip rehab checklist, schedule and pain log.
         </p>
       </div>
 
       <form onSubmit={submit} className="card space-y-4 p-5">
-        <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1">
+        <div className="grid grid-cols-3 gap-1 rounded-xl bg-panel p-1">
           {(
             [
               ['signin', 'Sign in'],
@@ -70,8 +70,8 @@ export function LoginForm() {
                 setError(null);
                 setNotice(null);
               }}
-              className={`rounded-lg px-2 py-2 text-sm font-medium transition ${
-                mode === value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
+              className={`focus-ring rounded-lg px-2 py-2 text-sm font-medium transition ${
+                mode === value ? 'bg-surface text-ink shadow-card' : 'text-muted hover:text-ink'
               }`}
             >
               {label}
@@ -80,7 +80,7 @@ export function LoginForm() {
         </div>
 
         <div>
-          <label htmlFor="email" className="text-sm font-medium text-slate-700">
+          <label htmlFor="email" className="text-sm font-medium text-ink">
             Email
           </label>
           <input
@@ -97,7 +97,7 @@ export function LoginForm() {
 
         {mode !== 'magic' && (
           <div>
-            <label htmlFor="password" className="text-sm font-medium text-slate-700">
+            <label htmlFor="password" className="text-sm font-medium text-ink">
               Password
             </label>
             <input
@@ -115,12 +115,12 @@ export function LoginForm() {
         )}
 
         {error && (
-          <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+          <p className="rounded-xl bg-danger-soft px-3.5 py-2.5 text-sm text-danger-soft-fg" role="alert">
             {error}
           </p>
         )}
         {notice && (
-          <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{notice}</p>
+          <p className="rounded-xl bg-ok-soft px-3.5 py-2.5 text-sm text-ok-soft-fg">{notice}</p>
         )}
 
         <button type="submit" className="btn-primary w-full" disabled={busy}>
@@ -134,7 +134,7 @@ export function LoginForm() {
         </button>
       </form>
 
-      <p className="mt-4 text-center text-xs text-slate-500">
+      <p className="mt-4 text-center text-xs text-faint">
         Private to you — every row is protected by Supabase row level security.
       </p>
     </div>

@@ -1,5 +1,8 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
+import { CheckIcon } from './icons';
+
 interface Props {
   index: number;
   total: number;
@@ -19,33 +22,54 @@ export function SessionToggle({ index, total, checked, busy, exerciseName, onTog
       ? `Mark ${exerciseName} complete`
       : `Mark ${exerciseName} session ${index + 1} of ${total} complete`;
 
+  // Animate only on the transition into "checked", not on first paint of an
+  // already-complete exercise.
+  const [justChecked, setJustChecked] = useState(false);
+  const previous = useRef(checked);
+  useEffect(() => {
+    if (checked && !previous.current) {
+      setJustChecked(true);
+      const id = setTimeout(() => setJustChecked(false), 400);
+      return () => clearTimeout(id);
+    }
+    previous.current = checked;
+  }, [checked]);
+
   return (
     <button
       type="button"
       onClick={onToggle}
       disabled={busy}
-      aria-pressed={checked}
+      role="checkbox"
+      aria-checked={checked}
       aria-label={label}
-      className={`flex h-11 min-w-[2.75rem] items-center justify-center gap-1.5 rounded-xl border px-3 text-sm font-semibold transition
-        focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
-        disabled:opacity-60 ${
+      className={`focus-ring group relative flex h-11 min-w-[2.75rem] items-center justify-center
+        gap-1.5 rounded-xl border px-3 text-sm font-semibold transition duration-200
+        active:scale-95 disabled:opacity-60 ${
           checked
-            ? 'border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-600'
-            : 'border-slate-300 bg-white text-slate-500 hover:border-brand-400 hover:text-brand-700'
+            ? 'border-ok bg-ok text-white'
+            : 'border-line bg-surface text-muted hover:border-accent hover:text-accent'
         }`}
     >
-      {checked ? (
-        <svg viewBox="0 0 20 20" className="h-5 w-5" fill="currentColor" aria-hidden="true">
-          <path
-            fillRule="evenodd"
-            d="M16.7 5.3a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0L3.3 9.7a1 1 0 1 1 1.4-1.4l3.8 3.8 6.8-6.8a1 1 0 0 1 1.4 0Z"
-            clipRule="evenodd"
+      <span className="relative flex h-5 w-5 items-center justify-center">
+        {checked ? (
+          <CheckIcon className={`h-4 w-4 ${justChecked ? 'animate-check-pop' : ''}`} />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="h-[18px] w-[18px] rounded-[6px] border-2 border-current transition
+              group-hover:scale-110"
           />
-        </svg>
-      ) : (
-        <span className="h-5 w-5 rounded-md border-2 border-current" aria-hidden="true" />
-      )}
-      {total > 1 && <span>{index + 1}</span>}
+        )}
+        {/* Ripple on completion. */}
+        {justChecked && (
+          <span
+            aria-hidden="true"
+            className="animate-check-pop absolute inset-0 -m-2 rounded-full bg-white/25"
+          />
+        )}
+      </span>
+      {total > 1 && <span className="tabular-nums">{index + 1}</span>}
     </button>
   );
 }
