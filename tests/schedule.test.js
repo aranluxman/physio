@@ -97,6 +97,37 @@ console.log('\n2-3x per week (week = Mon 17 .. Sun 23)');
   eq(pick(p, 'kb').weekly.done, 0, 'previous week does not leak in');
 }
 
+console.log('\nas needed (stretches, after a track session)');
+{
+  const stretch = { ...base, id:'st', name:'Hamstring Stretch', frequency:'as_needed', hold_seconds:30, display_order:80 };
+  eq(scheduleLabel(stretch), 'As needed', 'as-needed label');
+  const p = buildDailyPlan([stretch], [], TODAY);
+  eq(pick(p, 'st').status, 'optional', 'never due, always available');
+  eq(pick(p, 'st').requiredSessions, 0, 'adds nothing to the daily target');
+  eq(p.totalRequired, 0, 'a day of only as-needed work is a rest day');
+  eq(p.percent, 100, 'and reads as complete rather than 0%');
+  const done = buildDailyPlan([stretch], [log('st', TODAY)], TODAY);
+  eq(pick(done, 'st').status, 'done', 'logging one marks it done');
+  const twice = buildDailyPlan([stretch], [log('st', TODAY, 0), log('st', TODAY, 1)], TODAY);
+  eq(pick(twice, 'st').statusLabel, 'Done 2 times today', 'counts repeats');
+}
+{
+  // Mixed day: the daily exercise still drives the progress bar.
+  const stretch = { ...base, id:'st', name:'Stretch', frequency:'as_needed', display_order:80 };
+  const p = buildDailyPlan([car, stretch], [], TODAY);
+  eq(p.totalRequired, 1, 'as-needed does not inflate the denominator');
+}
+
+console.log('\nunknown frequency must not crash the page');
+{
+  const weird = { ...base, id:'wx', name:'Mystery', frequency:'someday_maybe', display_order:5 };
+  const p = buildDailyPlan([weird], [], TODAY);
+  eq(p.items.length, 1, 'still produces a plan item');
+  eq(pick(p, 'wx').status, 'optional', 'degrades to optional');
+  eq(pick(p, 'wx').statusLabel, 'No schedule set', 'and says so plainly');
+  eq(scheduleLabel(weird), 'Unscheduled', 'label does not render undefined');
+}
+
 console.log('\nordering + rest day');
 {
   const p = buildDailyPlan(all, [log('dead', '2026-08-18')], TODAY);

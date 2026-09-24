@@ -11,6 +11,35 @@ import { useAuth } from './useAuth';
 /** How much history to pull down. Plenty for streaks and "every N days" maths. */
 const HISTORY_DAYS = 120;
 
+/**
+ * PostgREST caps a response at the project's max-rows setting (1000 by
+ * default) and, without an ORDER BY, which rows you get is undefined. At ~16
+ * sessions a day that cap arrives in about two months and the history would
+ * silently start using an arbitrary subset. Page through it instead.
+ */
+const LOG_PAGE_SIZE = 1000;
+
+async function fetchAllLogs(
+  supabase: ReturnType<typeof getSupabase>,
+  since: string,
+): Promise<LogEntry[]> {
+  const all: LogEntry[] = [];
+  for (let from = 0; ; from += LOG_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('physio_logs')
+      .select('*')
+      .gte('completed_on', since)
+      .order('completed_on', { ascending: false })
+      .order('exercise_id', { ascending: true })
+      .order('session_index', { ascending: true })
+      .range(from, from + LOG_PAGE_SIZE - 1);
+    if (error) throw error;
+    const page = (data ?? []) as LogEntry[];
+    all.push(...page);
+    if (page.length < LOG_PAGE_SIZE) return all;
+  }
+}
+
 interface PhysioState {
   exercises: Exercise[];
   logs: LogEntry[];
@@ -55,9 +84,9 @@ export function usePhysio() {
     setError(null);
     try {
       const since = addDays(todayISO(), -HISTORY_DAYS);
-      const [exercisesRes, logsRes, appointmentsRes, notesRes] = await Promise.all([
+      const [exercisesRes, logs, appointmentsRes, notesRes] = await Promise.all([
         supabase.from('physio_exercises').select('*').order('display_order', { ascending: true }),
-        supabase.from('physio_logs').select('*').gte('completed_on', since),
+        fetchAllLogs(supabase, since),
         supabase.from('physio_appointments').select('*').order('scheduled_at', { ascending: true }),
         supabase
           .from('physio_therapist_notes')
@@ -67,13 +96,13 @@ export function usePhysio() {
       ]);
 
       const firstError =
-        exercisesRes.error || logsRes.error || appointmentsRes.error || notesRes.error;
+        exercisesRes.error || appointmentsRes.error || notesRes.error;
       if (firstError) throw firstError;
       if (!mounted.current) return;
 
       setData({
         exercises: (exercisesRes.data ?? []) as Exercise[],
-        logs: (logsRes.data ?? []) as LogEntry[],
+        logs,
         appointments: (appointmentsRes.data ?? []) as Appointment[],
         notes: (notesRes.data ?? []) as TherapistNote[],
       });

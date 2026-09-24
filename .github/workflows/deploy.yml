@@ -55,20 +55,35 @@ jobs:
           fi
           npm run build
 
-      # `pages deploy` fails if the project does not exist yet, and it cannot be
-      # created from the dashboard's Git flow without also wiring up a second,
-      # competing build. Creating it here means the only Cloudflare setup left
-      # is the API token and account ID.
+      # Create the Pages project on first run. This used to be
+      # continue-on-error, which swallowed a real failure: `physio-tracker` was
+      # already taken by a stranger's site (pages.dev names are unique across
+      # all of Cloudflare), the create silently failed, and the deploy went
+      # nowhere. Now only "already exists" is tolerated; anything else stops
+      # the run with the reason printed.
       - name: Create the Pages project if it does not exist
-        uses: cloudflare/wrangler-action@v3
-        continue-on-error: true
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: >-
-            pages project create
-            ${{ vars.CLOUDFLARE_PROJECT_NAME || 'physio-tracker' }}
-            --production-branch=main
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PROJECT_NAME: ${{ vars.CLOUDFLARE_PROJECT_NAME || 'aran-physio' }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::Missing CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ACCOUNT_ID. Add them under Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          set +e
+          out=$(npx --yes wrangler@3 pages project create "$PROJECT_NAME" --production-branch=main 2>&1)
+          code=$?
+          set -e
+          echo "$out"
+          if [ $code -eq 0 ]; then
+            echo "Created Pages project $PROJECT_NAME."
+          elif echo "$out" | grep -qiE "already (exists|in use)"; then
+            echo "Pages project $PROJECT_NAME already exists — nothing to do."
+          else
+            echo "::error::Could not create or reach the Pages project '$PROJECT_NAME'. If the name is taken by another Cloudflare account, set a different one in the CLOUDFLARE_PROJECT_NAME repository variable."
+            exit $code
+          fi
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
@@ -79,5 +94,5 @@ jobs:
           # the default (Settings -> Secrets and variables -> Actions -> Variables).
           command: >-
             pages deploy out
-            --project-name=${{ vars.CLOUDFLARE_PROJECT_NAME || 'physio-tracker' }}
+            --project-name=${{ vars.CLOUDFLARE_PROJECT_NAME || 'aran-physio' }}
             --branch=main

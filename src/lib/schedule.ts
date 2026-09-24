@@ -34,6 +34,12 @@ export function scheduleLabel(exercise: Exercise): string {
       const max = exercise.weekly_target_max ?? min;
       return max > min ? `${min}-${max}x per week` : `${min}x per week`;
     }
+    case 'as_needed':
+      return 'As needed';
+    default:
+      // A frequency added to the database but not yet to the app. Say so
+      // rather than rendering "undefined".
+      return 'Unscheduled';
   }
 }
 
@@ -46,14 +52,20 @@ export function frequencyGroup(exercise: Exercise): string {
     case 'every_n_days':
       return 'Every 2 days';
     case 'times_per_week':
-      return '2-3 times per week';
+      return 'Twice a week';
+    case 'as_needed':
+      return 'As needed';
+    default:
+      return 'Other';
   }
 }
 
 export const GROUP_ORDER = [
   'Daily / Multiple times per day',
   'Every 2 days',
-  '2-3 times per week',
+  'Twice a week',
+  'As needed',
+  'Other',
 ];
 
 function countOn(logs: LogEntry[], exerciseId: string, iso: string): number {
@@ -199,6 +211,27 @@ function planForExercise(exercise: Exercise, logs: LogEntry[], today: string): P
         weekly,
       };
     }
+
+    case 'as_needed':
+      // Never owed, never overdue — it just sits there ready to be logged.
+      return {
+        ...base,
+        requiredSessions: 0,
+        status: doneToday > 0 ? 'done' : 'optional',
+        statusLabel:
+          doneToday > 0
+            ? `Done ${doneToday}${doneToday === 1 ? ' time' : ' times'} today`
+            : 'Whenever you need it — and after a track session',
+      };
+
+    default:
+      // An unknown frequency must not take the whole page down with it.
+      return {
+        ...base,
+        requiredSessions: 0,
+        status: 'optional',
+        statusLabel: 'No schedule set',
+      };
   }
 }
 

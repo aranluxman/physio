@@ -3,7 +3,9 @@ export type FrequencyType =
   | 'daily'
   | 'times_per_day'
   | 'every_n_days'
-  | 'times_per_week';
+  | 'times_per_week'
+  /** No schedule — done when it's wanted (e.g. stretches after a track session). */
+  | 'as_needed';
 
 export interface Exercise {
   id: string;

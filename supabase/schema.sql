@@ -24,8 +24,12 @@ begin
       'daily',          -- once every day
       'times_per_day',  -- N sessions every day (e.g. 3x/day)
       'every_n_days',   -- once every N days (e.g. every 2 days)
-      'times_per_week'  -- N-M sessions per week, day is flexible (e.g. 2-3x/week)
+      'times_per_week', -- N-M sessions per week, day is flexible (e.g. 2x/week)
+      'as_needed'       -- no schedule; done when wanted (e.g. stretches after track)
     );
+  else
+    -- Added later than the rest of the enum; safe to re-run.
+    alter type public.physio_frequency_type add value if not exists 'as_needed';
   end if;
 end
 $$;
@@ -73,6 +77,7 @@ create table if not exists public.physio_exercises (
     or (frequency = 'times_per_day'  and sessions_per_day >= 1)
     or (frequency = 'every_n_days'   and interval_days is not null)
     or (frequency = 'times_per_week' and weekly_target_min is not null)
+    or (frequency = 'as_needed'      and sessions_per_day >= 1)
   ),
   -- one row per exercise name per user
   constraint physio_exercises_user_name_uk unique (user_id, name)
@@ -266,59 +271,60 @@ begin
      target_sets, target_reps, hold_seconds, load_lbs, display_order)
   values
     (p_user_id, 'Hip CAR', 'Hip Mobility',
-     'Controlled Articular Rotation. Move the hip slowly through its full circle, keeping the rest of the body still.',
+     'Controlled Articular Rotation. Move the hip slowly through its full circle, keeping the rest of the body still. Do it before practice or training.',
      'daily', 1, null, null, null, 3, 8, null, null, 10),
 
     (p_user_id, 'Hip 90:90 Rotations', 'Hip Mobility',
-     'Seated 90/90. Rotate both knees side to side under control, sitting tall.',
-     'times_per_day', 3, null, null, null, 1, 10, null, null, 20),
+     'Seated 90/90. Rotate both knees side to side under control, sitting tall. Especially before practice or training.',
+     'daily', 1, null, null, null, 1, 10, null, null, 20),
 
-    (p_user_id, 'Kneeling Hip Flexor Stretch', 'Mobility / Stretch',
-     'Half-kneeling. Tuck the pelvis, squeeze the glute, and drive gently forward. 30-second hold each side.',
-     'times_per_day', 3, null, null, null, 1, null, 30, null, 30),
+    (p_user_id, 'Single Leg Squat', 'Hip Strength',
+     'Single leg squat holding 10 lb. Control the descent and keep the knee tracking over the mid-foot.',
+     'times_per_week', 1, null, 2, 2, 3, 10, null, 10.0, 30),
 
-    (p_user_id, 'Hip Adductor Stretch', 'Mobility / Stretch',
-     'Groin stretch, 30-second hold each side. Breathe out into the stretch, no bouncing.',
-     'times_per_day', 3, null, null, null, 1, null, 30, null, 40),
+    (p_user_id, 'Single Leg RDL', 'Hip Strength',
+     'Single leg Romanian deadlift with 10 lb. Hinge from the hip with a flat back, hips square.',
+     'times_per_week', 1, null, 2, 2, 3, 10, null, 10.0, 40),
 
-    (p_user_id, 'Hamstring Stretch', 'Mobility / Stretch',
-     'Long-leg hamstring stretch, 30-second hold each side. Hinge from the hip with a flat back.',
-     'times_per_day', 3, null, null, null, 1, null, 30, null, 50),
+    (p_user_id, 'Lateral Step Down with Band', 'Hip Strength',
+     'Lateral step down against a band. Control the descent, keep the knee tracking over the mid-foot.',
+     'times_per_week', 1, null, 2, 2, 4, 10, null, null, 50),
+
+    (p_user_id, 'Hip Internal Rotator Strengthening', 'Hip Strength',
+     'Targets the hip internal rotators — the weakness identified on 22 Sep and a common contributor to groin strain. Confirm the exact movement with Roland.',
+     'times_per_week', 1, null, 2, 2, 3, 10, null, null, 60),
 
     (p_user_id, 'Dead Bug', 'Core / Hip Flexors',
      'Targeted core and hip flexor work. Keep the low back flat on the floor throughout.',
-     'every_n_days', 1, 2, null, null, 3, 6, null, null, 60),
+     'every_n_days', 1, 2, null, null, 3, 6, null, null, 70),
 
-    (p_user_id, 'Kettlebell Hip Flexor Hold', 'Hip Strength',
-     'Kettlebell hip flexor hold with a 30 lb bell. Keep the hip above 90 degrees and the spine tall.',
-     'times_per_week', 1, null, 2, 3, 3, 8, null, 30.0, 70),
+    (p_user_id, 'Kneeling Hip Flexor Stretch', 'Mobility / Stretch',
+     'Half-kneeling. Tuck the pelvis, squeeze the glute, drive gently forward. 30-second hold each side. As needed, and after a track session.',
+     'as_needed', 1, null, null, null, 1, null, 30, null, 80),
 
-    (p_user_id, 'Lateral Step Down', 'Hip Strength',
-     'Lateral step down with 25 lb load. Control the descent, keep the knee tracking over the mid-foot.',
-     'times_per_week', 1, null, 2, 2, 4, 10, null, 25.0, 80)
+    (p_user_id, 'Hip Adductor Stretch', 'Mobility / Stretch',
+     'Groin stretch, 30-second hold each side. As needed, and after a track session.',
+     'as_needed', 1, null, null, null, 1, null, 30, null, 90),
+
+    (p_user_id, 'Hamstring Stretch', 'Mobility / Stretch',
+     'Long-leg hamstring stretch, 30-second hold each side. As needed, and after a track session.',
+     'as_needed', 1, null, null, null, 1, null, 30, null, 100)
   on conflict (user_id, name) do nothing;
 
-  -- ---- Next appointment ----------------------------------------------------
-  -- 2026-09-08 17:30 local (America/Toronto) -> stored as an absolute instant.
-  insert into public.physio_appointments (user_id, title, scheduled_at, timezone, notes)
-  select p_user_id,
-         'Physiotherapy appointment',
-         timestamp '2026-09-08 17:30:00' at time zone 'America/Toronto',
-         'America/Toronto',
-         'Progress review — hip mobility and hip/core strengthening.'
-  where not exists (
-    select 1 from public.physio_appointments a where a.user_id = p_user_id
-  );
+  -- No appointment is seeded. Roland's 22 Sep summary says a discharge
+  -- session is coming but gives no date, and a clinical date must not be
+  -- invented. Add the real one to physio_appointments when it is known.
 
   -- ---- Therapist notes -----------------------------------------------------
   insert into public.physio_therapist_notes (user_id, body, category, is_pinned, display_order)
   select p_user_id, v.body, v.category, v.is_pinned, v.display_order
   from (values
-    ('Focus is hip mobility plus hip and core strengthening for hip impingement recovery.', 'Focus', true, 10),
-    ('Hip is improving — no pain triggered during running.', 'Status', true, 20),
-    ('Upper back exercises are on maintenance: keep them ticking over, no progression needed right now.', 'Maintenance', false, 30),
-    ('Stretches are 30-second holds, three times through the day rather than all in one block.', 'Technique', false, 40),
-    ('Stop and log the pain level if anything reproduces the pinch at the front of the hip.', 'Technique', false, 50)
+    ('Progressing very well — no pain with testing or exercises, and strength is improving.', 'Status', true, 10),
+    ('Hip internal rotators are the weak link, and a common contributor to groin strain. The new internal rotator exercise targets this.', 'Focus', true, 20),
+    ('Hip mobility (Hip CAR and 90:90) every day, especially before practice or training.', 'Technique', false, 30),
+    ('Strength work — single leg squat, single leg RDL, banded lateral step down, internal rotators — twice a week.', 'Technique', false, 40),
+    ('Dead bug every other day. Hip stretches as needed and after a track session.', 'Technique', false, 50),
+    ('If anything flares up before the discharge session, email Roland.', 'Status', false, 60)
   ) as v(body, category, is_pinned, display_order)
   where not exists (
     select 1 from public.physio_therapist_notes n where n.user_id = p_user_id
@@ -409,10 +415,14 @@ begin
     raise notice 'Seeded the physio regimen for %.', target_email;
   end if;
 exception
-  -- Reading auth.users is not essential. If this project does not grant it,
-  -- say so and carry on rather than rolling back the entire schema.
-  when insufficient_privilege then
-    raise notice 'Cannot read auth.users here; skipping. Use the "Load my regimen" button in the app instead.';
+  -- Nothing in this block is essential, and the SQL Editor runs the file as a
+  -- single transaction, so any error here would roll back every table above
+  -- it. Two known cases: no SELECT on auth.users, and Postgres refusing to use
+  -- an enum value that was added earlier in this same transaction. Report and
+  -- carry on; the "Load my regimen" button seeds the account either way.
+  when others then
+    raise notice 'Skipped seeding % (%). Use the "Load my regimen" button in the app instead.',
+      target_email, sqlerrm;
 end
 $$;
 
