@@ -47,7 +47,8 @@ note entries.
 | `daily` | Due every day, one session. | Hip CAR |
 | `times_per_day` | Due every day, N sessions. | 90:90 rotations, all three stretches |
 | `every_n_days` | Due when N days have passed since the last logged session; **Rest** otherwise. Never logged ⇒ due now. Flagged *overdue* once it slips past. | Dead Bug |
-| `times_per_week` | Counts sessions in the current Mon–Sun week. Below the minimum ⇒ **Due**; between min and max ⇒ **Optional**; at max ⇒ **Rest** until Monday. Flagged *don't skip* when the sessions still owed match the days left in the week. | Kettlebell hip flexor hold, lateral step down |
+| `as_needed` | Never owed and never overdue — always available to log, and excluded from the daily target. | The three hip stretches |
+| `times_per_week` | Counts sessions in the current Mon–Sun week. Below the minimum ⇒ **Due**; between min and max ⇒ **Optional**; at max ⇒ **Rest** until Monday. Flagged *don't skip* when the sessions still owed match the days left in the week. | The four strength exercises |
 
 All calendar maths runs in **your local timezone** (dates are derived from the browser
 clock, not UTC), so a 10pm session is logged against today, not tomorrow.
@@ -58,15 +59,17 @@ clock, not UTC), so a 10pm session is logged against today, not tomorrow.
 | --- | --- | --- | --- |
 | Hip CAR | Hip Mobility | 3 sets × 8 reps | Daily |
 | Hip 90:90 Rotations | Hip Mobility | 10 reps | 3x per day |
-| Kneeling Hip Flexor Stretch | Mobility / Stretch | 30s hold | 3x per day |
-| Hip Adductor Stretch | Mobility / Stretch | 30s hold | 3x per day |
-| Hamstring Stretch | Mobility / Stretch | 30s hold | 3x per day |
-| Dead Bug | Core / Hip Flexors | 3 sets × 6 reps | Every 2 days |
-| Kettlebell Hip Flexor Hold | Hip Strength | 3 sets × 8 reps, 30 lbs | 2–3x per week |
-| Lateral Step Down | Hip Strength | 4 sets × 10 reps, 25 lbs | 2x per week |
+| Single Leg Squat | Hip Strength | 4 sets × 8 reps, 10 lbs | 2x per week |
+| Single Leg RDL | Hip Strength | 4 sets × 8 reps, 10 lbs | 2x per week |
+| Lateral Step Down with Band | Hip Strength | 4 sets × 8 reps | 2x per week |
+| Hip Internal Rotation with Block | Hip Strength | 4 sets × 6 reps | 2x per week |
+| Dead Bug | Core / Hip Flexors | 3 sets × 14 reps | Every 2 days |
+| Kneeling Hip Flexor Stretch | Mobility / Stretch | 30s hold | As needed |
+| Hip Adductor Stretch | Mobility / Stretch | 30s hold | As needed |
+| Hamstring Stretch | Mobility / Stretch | 30s hold | As needed |
 
-Next appointment: **Tuesday 8 September 2026, 5:30 PM** (stored as an absolute instant,
-`2026-09-08 17:30 America/Toronto`).
+Current as of Roland Sanares' follow-up of 22 September 2026.
+
 
 ---
 
@@ -254,7 +257,6 @@ src/
     ExerciseCard.tsx     One exercise: tick boxes, pain picker, notes
     SessionToggle.tsx    A single session tick box
     ProgressBar.tsx      Daily session progress
-    AppointmentCard.tsx  Next appointment + live countdown
     NotesPanel.tsx       Therapist notes
     EmptyRegimen.tsx     "Load my regimen" fallback
   hooks/
@@ -271,8 +273,8 @@ supabase/
 tests/
   schedule.test.js       Assertions covering every frequency rule
 .github/workflows/
-  deploy.yml             main -> Cloudflare Pages
-  ci.yml                 Pull requests: typecheck, test, build
+  ci.yml                 Typecheck, test and build. Deployment itself is
+                         handled by Cloudflare Pages' Git integration.
 ```
 
 ## Testing

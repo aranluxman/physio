@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { formatShortDate, fromISODate, startOfWeek, addDays, daysBetween } from '@/lib/date';
 
 export interface HeatmapDay {
@@ -32,14 +32,14 @@ const LEVEL_CLASS: Record<number, string> = {
 };
 
 const LEVEL_LABEL: Record<number, string> = {
-  0: 'Rest day',
+  0: 'Rest day — nothing scheduled',
   1: 'Nothing logged',
   2: 'Some sessions',
   3: 'Most sessions',
-  4: 'Complete',
+  4: 'Everything done',
 };
 
-const WEEKDAYS = ['Mon', '', 'Wed', '', 'Fri', '', 'Sun'];
+const DAY_INITIALS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 interface Props {
   days: HeatmapDay[];
@@ -49,122 +49,104 @@ interface Props {
 export function Heatmap({ days, today }: Props) {
   const [hovered, setHovered] = useState<HeatmapDay | null>(null);
 
-  if (days.length === 0) return null;
+  const grid = useMemo(() => {
+    if (days.length === 0) return null;
+    // Lay the run out in calendar weeks (Mon..Sun rows) like a contribution
+    // graph, padding the first week so weekdays line up across columns.
+    const gridStart = startOfWeek(days[0].iso);
+    const total = daysBetween(gridStart, today) + 1;
+    const byIso = new Map(days.map((d) => [d.iso, d]));
 
-  // Lay the run out in calendar weeks (Mon..Sun columns) like a contribution
-  // graph, padding the first week so weekdays line up across columns.
-  const first = days[0].iso;
-  const gridStart = startOfWeek(first);
-  const total = daysBetween(gridStart, today) + 1;
-  const byIso = new Map(days.map((d) => [d.iso, d]));
+    const weeks: (HeatmapDay | null)[][] = [];
+    for (let i = 0; i < total; i++) {
+      const iso = addDays(gridStart, i);
+      const w = Math.floor(i / 7);
+      if (!weeks[w]) weeks[w] = Array(7).fill(null);
+      weeks[w][i % 7] = byIso.get(iso) ?? null;
+    }
 
-  const weeks: (HeatmapDay | null)[][] = [];
-  for (let i = 0; i < total; i++) {
-    const iso = addDays(gridStart, i);
-    const weekIndex = Math.floor(i / 7);
-    const dayIndex = i % 7;
-    if (!weeks[weekIndex]) weeks[weekIndex] = Array(7).fill(null);
-    weeks[weekIndex][dayIndex] = byIso.get(iso) ?? null;
-  }
+    // One label per month, on the first column where that month appears.
+    const months: { col: number; label: string }[] = [];
+    let seen = '';
+    weeks.forEach((week, col) => {
+      const first = week.find(Boolean);
+      if (!first) return;
+      const d = fromISODate(first.iso);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      if (key !== seen) {
+        seen = key;
+        months.push({ col, label: d.toLocaleDateString(undefined, { month: 'short' }) });
+      }
+    });
 
-  const monthLabels = weeks.map((week) => {
-    const firstReal = week.find(Boolean);
-    if (!firstReal) return '';
-    const d = fromISODate(firstReal.iso);
-    // Label a column only when its week contains the 1st..7th of a month.
-    return d.getDate() <= 7 ? d.toLocaleDateString(undefined, { month: 'short' }) : '';
-  });
+    return { weeks, months };
+  }, [days, today]);
+
+  if (!grid) return null;
+  const { weeks, months } = grid;
 
   return (
     <div>
-      <div className="overflow-x-auto pb-1">
-        {/* One knob controls the whole grid, so cells grow with the viewport
-            rather than sitting in a corner of a wide card. */}
-        <div
-          className="inline-flex min-w-full flex-col gap-1.5
-            [--cell:15px] sm:[--cell:20px] lg:[--cell:26px]"
-        >
-          <div className="flex gap-[3px] pl-9">
-            {monthLabels.map((label, i) => (
-              <span
-                key={i}
-                className="w-[var(--cell)] shrink-0 text-[10px] font-medium text-faint"
-                aria-hidden="true"
-              >
-                {label}
-              </span>
-            ))}
-          </div>
+      {/*
+        One column per week, square cells that grow with the card but stop at
+        a sane size — left to fill a wide card outright, eight weeks of data
+        became a checkerboard of 96px tiles. Centred so the leftover space is
+        balanced rather than stranding the grid in the corner.
+      */}
+      <div
+        className="mx-auto grid gap-x-1 gap-y-1"
+        style={{
+          gridTemplateColumns: `1.25rem repeat(${weeks.length}, minmax(0, 1fr))`,
+          maxWidth: `calc(1.25rem + ${weeks.length} * 2.1rem)`,
+        }}
+      >
+        {/* Month row */}
+        <span aria-hidden="true" />
+        {weeks.map((_, col) => {
+          const m = months.find((x) => x.col === col);
+          return (
+            <span
+              key={`m${col}`}
+              aria-hidden="true"
+              className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-faint"
+            >
+              {m?.label ?? ''}
+            </span>
+          );
+        })}
 
-          <div className="flex gap-[3px]">
-            <div className="mr-1 flex w-8 shrink-0 flex-col gap-[3px]">
-              {WEEKDAYS.map((d, i) => (
-                <span
-                  key={i}
-                  className="flex h-[var(--cell)] items-center text-[10px] font-medium text-faint"
-                  aria-hidden="true"
-                >
-                  {d}
-                </span>
-              ))}
-            </div>
-
-            {weeks.map((week, wi) => (
-              <div key={wi} className="flex shrink-0 flex-col gap-[3px]">
-                {week.map((day, di) => {
-                  if (!day) {
-                    return <span key={di} className="h-[var(--cell)] w-[var(--cell)]" aria-hidden="true" />;
-                  }
-                  const level = levelOf(day);
-                  const isToday = day.iso === today;
-                  const label = `${formatShortDate(day.iso)}: ${
-                    day.required === 0
-                      ? 'rest day'
-                      : `${day.completed} of ${day.required} sessions, ${day.percent}% complete`
-                  }`;
-                  return (
-                    <button
-                      key={di}
-                      type="button"
-                      tabIndex={0}
-                      aria-label={label}
-                      title={label}
-                      onMouseEnter={() => setHovered(day)}
-                      onMouseLeave={() => setHovered(null)}
-                      onFocus={() => setHovered(day)}
-                      onBlur={() => setHovered(null)}
-                      className={`focus-ring h-[var(--cell)] w-[var(--cell)] rounded-[4px] transition
-                        duration-150 hover:scale-125 hover:ring-1 hover:ring-ink/25
-                        ${LEVEL_CLASS[level]}
-                        ${isToday ? 'ring-1 ring-accent ring-offset-1 ring-offset-surface' : ''}`}
-                    />
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* Seven weekday rows */}
+        {DAY_INITIALS.map((initial, row) => (
+          <FragmentRow
+            key={row}
+            initial={initial}
+            row={row}
+            weeks={weeks}
+            today={today}
+            onHover={setHovered}
+          />
+        ))}
       </div>
 
-      {/* Reserve the row so the layout does not jump as you move across cells. */}
-      <div className="mt-3 flex min-h-[38px] flex-wrap items-center justify-between gap-3">
-        <div aria-live="polite" className="text-sm">
+      {/* Reserved so the layout does not jump as the pointer moves. */}
+      <div className="mt-4 flex min-h-[2.25rem] flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <p aria-live="polite" className="text-sm">
           {hovered ? (
-            <span className="text-ink">
-              <span className="font-semibold">{formatShortDate(hovered.iso)}</span>
+            <>
+              <span className="font-semibold text-ink">{formatShortDate(hovered.iso)}</span>
               <span className="text-muted">
-                {' — '}
+                {' · '}
                 {hovered.required === 0
                   ? 'rest day'
-                  : `${hovered.completed}/${hovered.required} sessions · ${hovered.percent}%`}
+                  : `${hovered.completed} of ${hovered.required} sessions · ${hovered.percent}%`}
               </span>
-            </span>
+            </>
           ) : (
-            <span className="text-faint">Hover or focus a day for detail</span>
+            <span className="text-faint">Hover or tab through a day for detail</span>
           )}
-        </div>
+        </p>
 
-        <div className="flex items-center gap-1.5 text-[11px] text-faint">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium text-faint">
           <span>Less</span>
           {[1, 2, 3, 4].map((level) => (
             <span
@@ -177,5 +159,59 @@ export function Heatmap({ days, today }: Props) {
         </div>
       </div>
     </div>
+  );
+}
+
+function FragmentRow({
+  initial,
+  row,
+  weeks,
+  today,
+  onHover,
+}: {
+  initial: string;
+  row: number;
+  weeks: (HeatmapDay | null)[][];
+  today: string;
+  onHover: (day: HeatmapDay | null) => void;
+}) {
+  return (
+    <>
+      <span
+        aria-hidden="true"
+        className="flex items-center text-[10px] font-medium leading-none text-faint"
+      >
+        {/* Only every other row is labelled, or the column reads as noise. */}
+        {row % 2 === 0 ? initial : ''}
+      </span>
+      {weeks.map((week, col) => {
+        const day = week[row];
+        if (!day) {
+          return <span key={col} className="aspect-square" aria-hidden="true" />;
+        }
+        const level = levelOf(day);
+        const isToday = day.iso === today;
+        const label = `${formatShortDate(day.iso)}: ${
+          day.required === 0
+            ? 'rest day'
+            : `${day.completed} of ${day.required} sessions, ${day.percent}% complete`
+        }`;
+        return (
+          <button
+            key={col}
+            type="button"
+            aria-label={label}
+            title={label}
+            onMouseEnter={() => onHover(day)}
+            onMouseLeave={() => onHover(null)}
+            onFocus={() => onHover(day)}
+            onBlur={() => onHover(null)}
+            className={`focus-ring aspect-square w-full rounded-[4px] transition duration-150
+              hover:ring-2 hover:ring-ink/20 ${LEVEL_CLASS[level]}
+              ${isToday ? 'ring-2 ring-accent ring-offset-1 ring-offset-surface' : ''}`}
+          />
+        );
+      })}
+    </>
   );
 }

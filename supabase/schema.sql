@@ -276,27 +276,27 @@ begin
 
     (p_user_id, 'Hip 90:90 Rotations', 'Hip Mobility',
      'Seated 90/90. Rotate both knees side to side under control, sitting tall. Especially before practice or training.',
-     'daily', 1, null, null, null, 1, 10, null, null, 20),
+     'times_per_day', 3, null, null, null, 1, 10, null, null, 20),
 
     (p_user_id, 'Single Leg Squat', 'Hip Strength',
      'Single leg squat holding 10 lb. Control the descent and keep the knee tracking over the mid-foot.',
-     'times_per_week', 1, null, 2, 2, 3, 10, null, 10.0, 30),
+     'times_per_week', 1, null, 2, 2, 4, 8, null, 10.0, 30),
 
     (p_user_id, 'Single Leg RDL', 'Hip Strength',
-     'Single leg Romanian deadlift with 10 lb. Hinge from the hip with a flat back, hips square.',
-     'times_per_week', 1, null, 2, 2, 3, 10, null, 10.0, 40),
+     'Single leg Romanian deadlift with 10 lb, both sides. Hinge from the hip with a flat back, hips square.',
+     'times_per_week', 1, null, 2, 2, 4, 8, null, 10.0, 40),
 
     (p_user_id, 'Lateral Step Down with Band', 'Hip Strength',
      'Lateral step down against a band. Control the descent, keep the knee tracking over the mid-foot.',
-     'times_per_week', 1, null, 2, 2, 4, 10, null, null, 50),
+     'times_per_week', 1, null, 2, 2, 4, 8, null, null, 50),
 
-    (p_user_id, 'Hip Internal Rotator Strengthening', 'Hip Strength',
-     'Targets the hip internal rotators — the weakness identified on 22 Sep and a common contributor to groin strain. Confirm the exact movement with Roland.',
-     'times_per_week', 1, null, 2, 2, 3, 10, null, null, 60),
+    (p_user_id, 'Hip Internal Rotation with Block', 'Hip Strength',
+     'Hip internal rotation against a block. Targets the internal rotators — the weakness identified on 22 Sep and a common contributor to groin strain.',
+     'times_per_week', 1, null, 2, 2, 4, 6, null, null, 60),
 
     (p_user_id, 'Dead Bug', 'Core / Hip Flexors',
      'Targeted core and hip flexor work. Keep the low back flat on the floor throughout.',
-     'every_n_days', 1, 2, null, null, 3, 6, null, null, 70),
+     'every_n_days', 1, 2, null, null, 3, 14, null, null, 70),
 
     (p_user_id, 'Kneeling Hip Flexor Stretch', 'Mobility / Stretch',
      'Half-kneeling. Tuck the pelvis, squeeze the glute, drive gently forward. 30-second hold each side. As needed, and after a track session.',
@@ -320,11 +320,11 @@ begin
   select p_user_id, v.body, v.category, v.is_pinned, v.display_order
   from (values
     ('Progressing very well — no pain with testing or exercises, and strength is improving.', 'Status', true, 10),
-    ('Hip internal rotators are the weak link, and a common contributor to groin strain. The new internal rotator exercise targets this.', 'Focus', true, 20),
-    ('Hip mobility (Hip CAR and 90:90) every day, especially before practice or training.', 'Technique', false, 30),
-    ('Strength work — single leg squat, single leg RDL, banded lateral step down, internal rotators — twice a week.', 'Technique', false, 40),
+    ('Hip internal rotators are an area of weakness, a common contributor to groin strain. The block exercise targets this.', 'Focus', true, 20),
+    ('Hip mobility — Hip CAR and 90:90 — every day, especially before practice or training.', 'Technique', false, 30),
+    ('Strength work twice a week: single leg squat, single leg RDL, banded lateral step down, internal rotation with block.', 'Technique', false, 40),
     ('Dead bug every other day. Hip stretches as needed and after a track session.', 'Technique', false, 50),
-    ('If anything flares up before the discharge session, email Roland.', 'Status', false, 60)
+    ('Discharge session next: Roland will cover how to progress the exercises independently. Email him if anything flares up before then.', 'Status', false, 60)
   ) as v(body, category, is_pinned, display_order)
   where not exists (
     select 1 from public.physio_therapist_notes n where n.user_id = p_user_id

@@ -32,17 +32,15 @@ export function NavBar() {
               className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-accent
                 text-accent-fg shadow-card transition group-hover:scale-105"
             >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
-                {/* Abstract range-of-motion arc with a joint at its pivot. */}
+              <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" aria-hidden="true">
+                {/* Rising bars: sessions stacking up over time. */}
                 <path
-                  d="M5 18a8 8 0 0 1 13-6.2"
+                  d="M5 19v-4.5M11 19v-8.5M17 19v-12"
                   stroke="currentColor"
                   strokeWidth="2.2"
                   strokeLinecap="round"
                 />
-                <circle cx="5" cy="18" r="2.2" fill="currentColor" />
-                <path d="M16 6.5 19.5 11 15 12" stroke="currentColor" strokeWidth="2.2"
-                  strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="17" cy="4.6" r="1.9" fill="currentColor" />
               </svg>
             </span>
             <span className="flex flex-col leading-none">

@@ -1,5 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
-  <rect width="192" height="192" rx="42" fill="#246865"/>
-  <text x="96" y="126" font-family="system-ui, sans-serif" font-size="88" font-weight="700"
-        fill="#ffffff" text-anchor="middle">PT</text>
+  <rect width="192" height="192" rx="44" fill="#146b64"/>
+  <g stroke="#ffffff" stroke-width="17" stroke-linecap="round" fill="none">
+    <path d="M56 140v-34"/>
+    <path d="M96 140v-64"/>
+    <path d="M136 140v-88"/>
+  </g>
+  <circle cx="136" cy="40" r="14" fill="#ffffff"/>
 </svg>

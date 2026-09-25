@@ -1,10 +1,13 @@
+# Checks only. Deployment is handled by Cloudflare Pages' own Git
+# integration, which builds straight from this repository — a second deploy
+# from here would race it.
 name: CI
 
 on:
   pull_request:
     branches: [main]
   push:
-    branches-ignore: [main]
+    branches: ['**']
 
 jobs:
   verify:

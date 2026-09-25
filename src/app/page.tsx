@@ -4,7 +4,6 @@ import { useMemo } from 'react';
 import { usePhysio } from '@/hooks/usePhysio';
 import { ProgressBar } from '@/components/ProgressBar';
 import { ExerciseCard } from '@/components/ExerciseCard';
-import { AppointmentCard } from '@/components/AppointmentCard';
 import { NotesPanel } from '@/components/NotesPanel';
 import { EmptyRegimen } from '@/components/EmptyRegimen';
 import { DayComplete } from '@/components/DayComplete';
@@ -17,7 +16,6 @@ export default function DashboardPage() {
     logs,
     notes,
     plan,
-    nextAppointment,
     today,
     loading,
     error,
@@ -113,7 +111,6 @@ export default function DashboardPage() {
         </>
       )}
 
-      <AppointmentCard appointment={nextAppointment} />
       <NotesPanel notes={notes} />
     </div>
   );
