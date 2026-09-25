@@ -9,6 +9,7 @@ import { errorMessage } from '@/lib/errors';
 import { Avatar } from '@/components/Avatar';
 import { StatTile } from '@/components/StatTile';
 import { ThemeSegmented } from '@/components/ThemeToggle';
+import { PushCard } from '@/components/PushCard';
 import { FlameIcon, CheckIcon, CalendarIcon, ChartIcon, LogOutIcon } from '@/components/icons';
 
 type Feedback = { kind: 'ok' | 'error'; text: string } | null;
@@ -84,6 +85,8 @@ export default function ProfilePage() {
           </div>
         )}
       </section>
+
+      <PushCard />
 
       <DisplayNameCard
         current={(user?.user_metadata?.display_name as string) ?? ''}
