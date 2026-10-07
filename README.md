@@ -58,20 +58,34 @@ clock, not UTC), so a 10pm session is logged against today, not tomorrow.
 | Exercise | Category | Dosage | Schedule |
 | --- | --- | --- | --- |
 | Hip CAR | Hip Mobility | 3 sets × 8 reps | Daily |
-| Hip 90:90 Rotations | Hip Mobility | 10 reps | 3x per day |
-| Single Leg Squat | Hip Strength | 4 sets × 8 reps, 10 lbs | 2x per week |
+| Hip 90:90 Rotations | Hip Mobility | 10 reps | Daily |
+| Single Leg Squat | Hip Strength | 3 sets × 8 reps, 10 lbs | 2x per week |
+| Lateral Step Down with Band | Hip Strength | 4 sets × 8 reps, light band | 2x per week |
 | Single Leg RDL | Hip Strength | 4 sets × 8 reps, 10 lbs | 2x per week |
-| Lateral Step Down with Band | Hip Strength | 4 sets × 8 reps | 2x per week |
 | Hip Internal Rotation with Block | Hip Strength | 4 sets × 6 reps | 2x per week |
-| Dead Bug | Core / Hip Flexors | 3 sets × 14 reps | Every 2 days |
+| Dead Bug | Core / Hip Flexors | 2 sets × 10 reps (5 each side) | 2x per week |
+| Foam Pad Balance | Balance / Stability | 3 × 30s single leg holds | 2x per week |
 | Kneeling Hip Flexor Stretch | Mobility / Stretch | 30s hold | As needed |
 | Hip Adductor Stretch | Mobility / Stretch | 30s hold | As needed |
 | Hamstring Stretch | Mobility / Stretch | 30s hold | As needed |
 
-Current as of Roland Sanares' follow-up of 22 September 2026.
+Current as of Roland Sanares' discharge summary of 6 October 2026. Discharged to independent maintenance; return within 3 months (by January 2027) needs no new assessment.
 
 
 ---
+
+## Reminders
+
+Two push notifications, both opt-in from the Profile page and both per-device:
+
+- **Daily**, 19:00 local, only when the day still owes sessions and nothing has
+  been logged. Silent once the day is done.
+- **Weekly**, Friday 18:00 local, naming any 2x/week exercise still short for
+  the Mon–Sun week — while the weekend is still there to fix it.
+
+One `pg_cron` job runs hourly and each subscription stores its own timezone, so
+a single schedule serves any zone. The VAPID private key is generated inside the
+Edge Function and never leaves the server.
 
 ## Setup
 

@@ -154,6 +154,17 @@ export function CoreIcon(props: IconProps) {
   );
 }
 
+/** Balance — a figure poised on a narrow base. */
+export function BalanceIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="12" cy="4.6" r="2" />
+      <path d="M12 7v7M12 14l-3 5M12 14l3 5" />
+      <path d="M5 21h14" />
+    </svg>
+  );
+}
+
 export function SparkleIcon(props: IconProps) {
   return (
     <svg {...base(props)}>

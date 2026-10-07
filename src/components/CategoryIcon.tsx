@@ -1,6 +1,6 @@
 'use client';
 
-import { CoreIcon, MobilityIcon, StrengthIcon, StretchIcon } from './icons';
+import { BalanceIcon, CoreIcon, MobilityIcon, StrengthIcon, StretchIcon } from './icons';
 
 type Tone = 'accent' | 'info' | 'ok' | 'warn';
 
@@ -16,6 +16,7 @@ interface CategoryStyle {
 function styleFor(category: string): CategoryStyle {
   const c = category.toLowerCase();
   if (c.includes('stretch')) return { Icon: StretchIcon, tone: 'info' };
+  if (c.includes('balance') || c.includes('stability')) return { Icon: BalanceIcon, tone: 'info' };
   if (c.includes('core')) return { Icon: CoreIcon, tone: 'warn' };
   if (c.includes('strength')) return { Icon: StrengthIcon, tone: 'ok' };
   return { Icon: MobilityIcon, tone: 'accent' };

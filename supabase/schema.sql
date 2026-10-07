@@ -271,32 +271,36 @@ begin
      target_sets, target_reps, hold_seconds, load_lbs, display_order)
   values
     (p_user_id, 'Hip CAR', 'Hip Mobility',
-     'Controlled Articular Rotation. Move the hip slowly through its full circle, keeping the rest of the body still. Do it before practice or training.',
+     'Both directions, full circle. Daily, especially before and after track sessions.',
      'daily', 1, null, null, null, 3, 8, null, null, 10),
 
     (p_user_id, 'Hip 90:90 Rotations', 'Hip Mobility',
-     'Seated 90/90. Rotate both knees side to side under control, sitting tall. Especially before practice or training.',
-     'times_per_day', 3, null, null, null, 1, 10, null, null, 20),
+     'Seated 90/90, rotating both knees under control. Daily, especially before and after track sessions.',
+     'daily', 1, null, null, null, 1, 10, null, null, 20),
 
     (p_user_id, 'Single Leg Squat', 'Hip Strength',
-     'Single leg squat holding 10 lb. Control the descent and keep the knee tracking over the mid-foot.',
-     'times_per_week', 1, null, 2, 2, 4, 8, null, 10.0, 30),
-
-    (p_user_id, 'Single Leg RDL', 'Hip Strength',
-     'Single leg Romanian deadlift with 10 lb, both sides. Hinge from the hip with a flat back, hips square.',
-     'times_per_week', 1, null, 2, 2, 4, 8, null, 10.0, 40),
+     'Holding 10 lb. Progress reps to 10, then 12, before adding 5 lb. Reduce range or weight if hip pain occurs.',
+     'times_per_week', 1, null, 2, 2, 3, 8, null, 10.0, 30),
 
     (p_user_id, 'Lateral Step Down with Band', 'Hip Strength',
-     'Lateral step down against a band. Control the descent, keep the knee tracking over the mid-foot.',
-     'times_per_week', 1, null, 2, 2, 4, 8, null, null, 50),
+     'Against a light resistance band. Focus on hip abductor engagement. Progress to a heavier band, add weight, or raise the step.',
+     'times_per_week', 1, null, 2, 2, 4, 8, null, null, 40),
+
+    (p_user_id, 'Single Leg RDL', 'Hip Strength',
+     'With 10 lb, both sides. Progress weight in 5 lb increments once stable and non-fatigued.',
+     'times_per_week', 1, null, 2, 2, 4, 8, null, 10.0, 50),
 
     (p_user_id, 'Hip Internal Rotation with Block', 'Hip Strength',
-     'Hip internal rotation against a block. Targets the internal rotators — the weakness identified on 22 Sep and a common contributor to groin strain.',
+     'Against a block. Progress reps two at a time, up to 10-12.',
      'times_per_week', 1, null, 2, 2, 4, 6, null, null, 60),
 
     (p_user_id, 'Dead Bug', 'Core / Hip Flexors',
-     'Targeted core and hip flexor work. Keep the low back flat on the floor throughout.',
-     'every_n_days', 1, 2, null, null, 3, 14, null, null, 70),
+     '2 sets of 10 reps, 5 each side. Optional progression: resistance band tied to the ankle, opposite arm and leg extended.',
+     'times_per_week', 1, null, 2, 2, 2, 10, null, null, 70),
+
+    (p_user_id, 'Foam Pad Balance', 'Balance / Stability',
+     'Single leg stance on a foam pad, 30-second holds. Add a knee bend to progress. For balance and stability.',
+     'times_per_week', 1, null, 2, 2, 3, null, 30, null, 75),
 
     (p_user_id, 'Kneeling Hip Flexor Stretch', 'Mobility / Stretch',
      'Half-kneeling. Tuck the pelvis, squeeze the glute, drive gently forward. 30-second hold each side. As needed, and after a track session.',
@@ -319,12 +323,12 @@ begin
   insert into public.physio_therapist_notes (user_id, body, category, is_pinned, display_order)
   select p_user_id, v.body, v.category, v.is_pinned, v.display_order
   from (values
-    ('Progressing very well — no pain with testing or exercises, and strength is improving.', 'Status', true, 10),
-    ('Hip internal rotators are an area of weakness, a common contributor to groin strain. The block exercise targets this.', 'Focus', true, 20),
-    ('Hip mobility — Hip CAR and 90:90 — every day, especially before practice or training.', 'Technique', false, 30),
-    ('Strength work twice a week: single leg squat, single leg RDL, banded lateral step down, internal rotation with block.', 'Technique', false, 40),
-    ('Dead bug every other day. Hip stretches as needed and after a track session.', 'Technique', false, 50),
-    ('Discharge session next: Roland will cover how to progress the exercises independently. Email him if anything flares up before then.', 'Status', false, 60)
+    ('Discharged on 6 Oct — final treatment session. The hip has improved significantly and is ready for independent maintenance.', 'Status', true, 10),
+    ('Squat, lunge and jump loading are all pain-free.', 'Status', true, 20),
+    ('Some hip abductor weakness remains, so keep the strength work at 2x/week to prevent relapse.', 'Focus', true, 30),
+    ('Hip CARs and 90/90 rotations daily, especially before and after track sessions.', 'Technique', false, 40),
+    ('Pain lingering more than a couple of hours after activity, or pain that stops you running, means the volume is too high — reduce load or range.', 'Technique', false, 50),
+    ('You can return within 3 months (by January 2027) without a new assessment if the hip starts bothering you again.', 'Status', false, 60)
   ) as v(body, category, is_pinned, display_order)
   where not exists (
     select 1 from public.physio_therapist_notes n where n.user_id = p_user_id
@@ -431,4 +435,69 @@ $$;
 --     of waiting for it to notice. Without this, the app can briefly get
 --     "Could not find the function public.physio_seed_my_regimen in the schema cache".
 -- ---------------------------------------------------------------------------
+notify pgrst, 'reload schema';
+
+-- ---------------------------------------------------------------------------
+-- 12. Push notifications. One row per device that opted in; the reminder
+--     Edge Function reads these. `timezone` lets one hourly cron serve every
+--     zone, and the two "last sent" stamps keep the daily and weekly nudges
+--     from firing twice in a local day.
+-- ---------------------------------------------------------------------------
+create table if not exists public.physio_push_subscriptions (
+  id                  uuid primary key default gen_random_uuid(),
+  user_id             uuid not null references auth.users (id) on delete cascade,
+  endpoint            text not null unique,
+  p256dh              text not null,
+  auth                text not null,
+  timezone            text not null default 'America/Toronto',
+  user_agent          text,
+  created_at          timestamptz not null default now(),
+  last_sent_at        timestamptz,
+  last_weekly_sent_at timestamptz,
+  failure_count       smallint not null default 0
+);
+
+alter table public.physio_push_subscriptions
+  add column if not exists last_weekly_sent_at timestamptz;
+
+create index if not exists physio_push_subscriptions_user_idx
+  on public.physio_push_subscriptions (user_id);
+
+alter table public.physio_push_subscriptions enable row level security;
+
+drop policy if exists "physio_push_all_own" on public.physio_push_subscriptions;
+create policy "physio_push_all_own" on public.physio_push_subscriptions
+  for all to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+grant select, insert, update, delete on public.physio_push_subscriptions to authenticated;
+
+-- Server-only config (VAPID private key, cron secret, reminder times). No
+-- policies and no grants: unreachable over the API, readable only by the
+-- service role, which is what the Edge Function runs as.
+create table if not exists public.physio_server_config (
+  key   text primary key,
+  value text not null
+);
+alter table public.physio_server_config enable row level security;
+revoke all on public.physio_server_config from anon, authenticated;
+
+-- The browser needs the VAPID public key; it is not a secret, but it lives in
+-- a table the client cannot read.
+create or replace function public.physio_vapid_public_key()
+returns text language sql security definer set search_path = public stable as $$
+  select value from public.physio_server_config where key = 'vapid_public_key';
+$$;
+revoke all on function public.physio_vapid_public_key() from public, anon;
+grant execute on function public.physio_vapid_public_key() to authenticated;
+
+insert into public.physio_server_config (key, value)
+select * from (values
+  ('reminder_hour', '19'),         -- daily nudge, local time
+  ('weekly_reminder_dow', '5'),    -- 1 = Monday ... 5 = Friday
+  ('weekly_reminder_hour', '18')   -- weekly summary, local time
+) as v(key, value)
+where not exists (
+  select 1 from public.physio_server_config c where c.key = v.key
+);
+
 notify pgrst, 'reload schema';
