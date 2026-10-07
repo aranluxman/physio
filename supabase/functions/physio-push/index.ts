@@ -26,15 +26,19 @@ const admin = () =>
     auth: { persistSession: false },
   });
 
+// supabase-js always sends x-client-info alongside authorization and apikey;
+// a preflight that does not allow it is rejected and the browser reports
+// "Failed to send a request to the Edge Function".
+const CORS = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-headers': 'authorization, x-client-info, apikey, content-type, x-reminder-secret',
+  'access-control-allow-methods': 'POST, OPTIONS',
+};
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: {
-      'content-type': 'application/json',
-      'access-control-allow-origin': '*',
-      'access-control-allow-headers': 'authorization, content-type, apikey, x-reminder-secret',
-      'access-control-allow-methods': 'POST, OPTIONS',
-    },
+    headers: { 'content-type': 'application/json', ...CORS },
   });
 
 async function getConfig(db: any, key: string): Promise<string | null> {
@@ -147,7 +151,7 @@ function weeklyShortfall(exercises: Exercise[], dates: Map<string, string[]>, to
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return json({}, 204);
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
   if (req.method !== 'POST') return json({ error: 'POST only' }, 405);
 
   const db = admin();
